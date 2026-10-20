@@ -14,8 +14,8 @@ class Gateway:
         self.last_global = 0.0
         self.last_chat = {}
 
-    async def send(self, chat_id, text, *, key, photo=None, markup=None, permitted=None):
-        payload = {"text": text, "photo_id": photo, "reply_markup": markup.to_dict() if markup else None}
+    async def send(self, chat_id, text, *, key, photo=None, markup=None, permitted=None, parse_mode=None):
+        payload = {"text": text, "photo_id": photo, "reply_markup": markup.to_dict() if markup else None, "parse_mode": parse_mode}
         with self.store.connect() as conn:
             previous = conn.execute("SELECT status FROM messages WHERE delivery_key=?", (key,)).fetchone()
             if previous:
@@ -35,10 +35,11 @@ class Gateway:
                 self.finish(key, "sending")
                 self.last_global = self.last_chat[chat_id] = time.monotonic()
                 try:
+                    options = {"parse_mode": parse_mode} if parse_mode else {}
                     if photo:
-                        await self.bot.send_photo(chat_id=chat_id, photo=photo, caption=text, reply_markup=markup)
+                        await self.bot.send_photo(chat_id=chat_id, photo=photo, caption=text, reply_markup=markup, **options)
                     else:
-                        await self.bot.send_message(chat_id=chat_id, text=text, reply_markup=markup)
+                        await self.bot.send_message(chat_id=chat_id, text=text, reply_markup=markup, **options)
                     return self.finish(key, "sent")
                 except RetryAfter as exc:
                     if attempt == 3:
