@@ -16,7 +16,7 @@ Python 3.12+, python-telegram-bot 22.8, SQLite. Запуск через long pol
 
 ## 2. Установка на Windows
 
-Установите Python 3.12 или новее с python.org и Git. Откройте PowerShell в папке проекта. Код должен содержать `restaurant_bot/` и `tests/` из ветки `feat/python-telegram-mvp`; исходная `main` с одним приветствием недостаточна. Подготовленная ветка пока локальная, публикация требует отдельного согласования.
+Установите Python 3.12 или новее с python.org и Git. Откройте PowerShell в папке проекта. Код должен содержать `restaurant_bot/` и `tests/` из ветки `feat/python-telegram-mvp`; исходная `main` с одним приветствием недостаточна. Код опубликован в ветке `feat/python-telegram-mvp`: https://github.com/RicoElLong/Bot-tg/tree/feat/python-telegram-mvp. Слияние с main и запуск не выполнялись.
 
 Если получен архив исходников, распакуйте его в отдельную папку. Для установленной версии:
 
