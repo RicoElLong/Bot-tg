@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import os
+import re
 from pathlib import Path
 from urllib.parse import urlsplit
 from .presentation import WELCOME_TITLE, WELCOME_TEXT
@@ -33,6 +34,7 @@ class Config:
     username: str
     welcome_title: str = WELCOME_TITLE
     welcome_text: str = WELCOME_TEXT
+    welcome_photo: str = ""
 
     @classmethod
     def load(cls, env: dict | None = None):
@@ -57,6 +59,11 @@ class Config:
         welcome_text = e.get("WELCOME_TEXT", WELCOME_TEXT).strip()
         if not 1 <= len(welcome_title) <= 100 or not 1 <= len(welcome_text) <= 600:
             raise ValueError("WELCOME_TITLE: 1–100 символов; WELCOME_TEXT: 1–600 символов")
+        welcome_photo = e.get("WELCOME_PHOTO", "").strip()
+        if welcome_photo and not re.fullmatch(r"[A-Za-z0-9_-]{1,512}", welcome_photo):
+            parsed = urlsplit(welcome_photo)
+            if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+                raise ValueError("WELCOME_PHOTO: нужна прямая HTTPS-ссылка на изображение или Telegram file_id")
         return cls(
             token=e.get("BOT_TOKEN", ""), admins=admins,
             database=Path(e.get("DATABASE_PATH", "data/restaurant.sqlite3")),
@@ -70,6 +77,7 @@ class Config:
             menu_url=urls[0], delivery_url=urls[1], actions_url=urls[2],
             contacts=e.get("CONTACTS_TEXT", "Самара, ул. Лейтенанта Шмидта, 1В"), username=username,
             welcome_title=welcome_title, welcome_text=welcome_text,
+            welcome_photo=welcome_photo,
         )
 
     def validate_launch(self):

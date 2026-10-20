@@ -128,7 +128,7 @@ DATABASE_PATH=data/restaurant-live.sqlite3
 
 ## Оформление и приветствие
 
-Готовые тексты, настройка `WELCOME_TITLE`/`WELCOME_TEXT`, аватара и описания через BotFather, а также обновление работающего бота без замены `.env` описаны в [инструкции оформления](docs/BOT_APPEARANCE_RU.md). Цвет кнопок зависит от темы Telegram гостя.
+Готовые тексты, настройка `WELCOME_TITLE`/`WELCOME_TEXT` и картинки `WELCOME_PHOTO`, аватара и описания через BotFather, а также обновление работающего бота без замены `.env` описаны в [инструкции оформления](docs/BOT_APPEARANCE_RU.md). Цвет кнопок зависит от темы Telegram гостя.
 
 ## 6. Рекламные ссылки и QR
 

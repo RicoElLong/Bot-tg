@@ -81,6 +81,46 @@ class PresentationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(changed.pd_version, self.cfg.pd_version)
         self.assertEqual(changed.marketing_version, self.cfg.marketing_version)
 
+    async def test_welcome_photo_keeps_full_consent_in_separate_message(self):
+        cfg = replace(self.cfg, welcome_photo="https://example.org/welcome.jpg")
+        await Guest(cfg, self.store, self.gateway).start(self.update, self.context)
+        with self.store.connect() as conn:
+            rows = [json.loads(r[0]) for r in conn.execute("SELECT payload FROM messages ORDER BY id")]
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["photo_id"], cfg.welcome_photo)
+        self.assertIsNone(rows[0]["reply_markup"])
+        self.assertLessEqual(len(unescape(rows[0]["text"])), 1024)
+        self.assertIsNone(rows[1]["photo_id"])
+        self.assertIn(cfg.pd_text, unescape(rows[1]["text"]))
+        self.assertFalse(self.store.registered(1))
+        self.bot.send_photo.assert_not_awaited()
+
+    async def test_returning_guest_gets_photo_and_menu_without_resubscription(self):
+        self.store.register(1, "organic", "v1", "PD", "reg")
+        cfg = replace(self.cfg, welcome_photo="file_id_example")
+        await Guest(cfg, self.store, self.gateway).start(self.update, self.context)
+        with self.store.connect() as conn:
+            row = json.loads(conn.execute("SELECT payload FROM messages").fetchone()[0])
+        self.assertEqual(row["photo_id"], cfg.welcome_photo)
+        self.assertIn("inline_keyboard", row["reply_markup"])
+        self.assertFalse(self.store.subscribed(1))
+
+    async def test_failed_photo_falls_back_to_text_and_registration_stays_available(self):
+        cfg = replace(self.cfg, welcome_photo="https://example.org/missing.jpg")
+        gateway = NS(send=AsyncMock(side_effect=["failed", "sandbox"]))
+        await Guest(cfg, self.store, gateway).start(self.update, self.context)
+        self.assertEqual(gateway.send.await_count, 2)
+        fallback = gateway.send.await_args
+        self.assertIsNone(fallback.kwargs["photo"])
+        self.assertIn("Начнём со знакомства?", fallback.args[1])
+        self.assertIn("pd_nonce", self.context.user_data)
+
+    async def test_welcome_photo_rejects_local_paths_and_insecure_links(self):
+        for value in ("file:///tmp/photo.jpg", "http://example.org/photo.jpg", "welcome.jpg", "https://user:pass@example.org/photo.jpg"):
+            with self.assertRaises(ValueError):
+                Config.load({"WELCOME_PHOTO": value})
+        self.assertEqual(Config.load({"WELCOME_PHOTO":"https://example.org/photo.jpg"}).welcome_photo,"https://example.org/photo.jpg")
+
 
 if __name__ == "__main__":
     unittest.main()

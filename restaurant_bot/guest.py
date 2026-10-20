@@ -31,6 +31,13 @@ class Guest:
     def back(self):
         return Keyboard([[Button("← Главное меню", callback_data="guest:home")]])
 
+    async def greeting_photo(self, update, context, text, markup=None):
+        if not self.config.welcome_photo:
+            return False
+        result = await self.reply(update, context, text, markup, photo=self.config.welcome_photo, rich=True)
+        # A failed or uncertain image must never prevent the consent flow.
+        return result in {"sent", "sandbox"}
+
     async def home(self, update, context):
         await self.reply(update, context, brand(self.config) + "\n\nВыбирайте, с чего начнём: меню, доставка или встреча у Волги.", self.menu(), rich=True)
 
@@ -39,15 +46,18 @@ class Guest:
         context.user_data["source"] = source
         if self.store.registered(update.effective_user.id):
             self.store.visit(update.effective_user.id, source)
-            await self.reply(update, context, brand(self.config) + "\n\nС возвращением на борт.\nРады снова видеть вас — выбирайте нужный раздел.", self.menu(), rich=True)
+            text = brand(self.config) + "\n\nС возвращением на борт.\nРады снова видеть вас — выбирайте нужный раздел."
+            if not await self.greeting_photo(update, context, text, self.menu()):
+                await self.reply(update, context, text, self.menu(), rich=True)
             return
         await self.offer_pd(update, context)
 
     async def offer_pd(self, update, context):
         nonce = secrets.token_hex(8)
         context.user_data["pd_nonce"] = nonce
+        with_photo = await self.greeting_photo(update, context, welcome(self.config))
         await self.reply(update, context,
-            welcome(self.config) + "\n\n" + consent_document("Начнём со знакомства?",
+            ("" if with_photo else welcome(self.config) + "\n\n") + consent_document("Начнём со знакомства?",
                 "Для регистрации нужно ваше согласие на обработку данных. Рекламная подписка подключается отдельно и только по желанию.", self.config.pd_text),
             Keyboard([[Button("Согласен на обработку данных", callback_data=f"pd:yes:{nonce}")], [Button("Продолжить без регистрации", callback_data=f"pd:no:{nonce}")]]), rich=True)
 
