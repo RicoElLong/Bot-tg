@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
-from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Update, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
 load_dotenv()
@@ -13,6 +13,7 @@ TOKEN = os.environ["BOT_TOKEN"]
 DB_PATH = Path(os.getenv("BOT_DB_PATH", "bot_users.sqlite3"))
 PRIVACY_URL = os.getenv("PRIVACY_POLICY_URL", "").strip()
 CONSENT_TEXT = os.getenv("PERSONAL_DATA_CONSENT_TEXT", "").strip()
+ROULETTE_URL = os.getenv("ROULETTE_WEBAPP_URL", "").strip()
 
 MENU = ReplyKeyboardMarkup(
     [["Акции", "Меню"], ["Доставка", "Контакты"], ["Вкусная рулетка"]],
@@ -154,11 +155,19 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start(update, context)
         return
     if value == "Вкусная рулетка":
-        await msg.reply_text(
-            "Вкусная рулетка пока в разработке. Первая попытка будет "
-            "доступна после запуска игры.",
-            reply_markup=MENU,
-        )
+        if ROULETTE_URL.startswith("https://"):
+            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+            await msg.reply_text(
+                "Откройте демонстрационную рулетку. Призы пока не выдаются.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("Открыть рулетку", web_app=WebAppInfo(url=ROULETTE_URL))
+                ]]),
+            )
+        else:
+            await msg.reply_text(
+                "Рулетка готовится к запуску. Для Mini App нужен публичный HTTPS-адрес.",
+                reply_markup=MENU,
+            )
     elif value in ("Акции", "Меню", "Доставка", "Контакты"):
         await msg.reply_text(f"Раздел «{value}» пока готовится.", reply_markup=MENU)
     else:
