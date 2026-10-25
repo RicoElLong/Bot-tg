@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Вкусная рулетка — Дети лейтенанта Шмидта</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:dark;font-family:Georgia,serif;background:#201c19;color:#f5e6ca}
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(circle at 50% 25%,#654535,#201c19 75%);text-align:center}
+main{max-width:480px;margin:auto;padding:26px 18px 42px}
+.kicker{letter-spacing:.18em;text-transform:uppercase;font:11px system-ui;color:#cda971}
+h1{font-size:36px;margin:12px 0 5px}p{color:#d9c9af;line-height:1.5}
+.wheel-wrap{position:relative;margin:32px auto;width:min(84vw,360px);aspect-ratio:1}
+.pointer{position:absolute;z-index:2;top:-17px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:34px solid #f2d394;filter:drop-shadow(0 2px 4px #000)}
+.wheel{width:100%;height:100%;border:10px solid #b88c4d;border-radius:50%;position:relative;overflow:hidden;box-shadow:0 0 0 4px #392820,0 15px 50px #0009;transition:transform 5.5s cubic-bezier(.13,.76,.08,1);background:conic-gradient(#714431 0deg 60deg,#a16c47 60deg 120deg,#63402e 120deg 180deg,#956344 180deg 240deg,#70402f 240deg 300deg,#b08355 300deg 360deg)}
+.segment{position:absolute;top:50%;left:50%;width:105px;transform-origin:0 0;text-align:center;font:700 13px system-ui;color:#fff3db;text-shadow:0 2px 3px #000a}
+.hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;background:#d6b377;border:7px solid #65432c;box-shadow:0 3px 8px #0009}
+button{width:100%;border:1px solid #f1d09b;border-radius:8px;padding:16px;background:#b38b57;color:#211911;font:bold 16px system-ui;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+#status{min-height:58px;font:15px system-ui;color:#f6dfba;margin-top:20px}
+.note{font:12px system-ui;color:#c8b9a5;margin-top:16px}
+</style>
+</head>
+<body><main>
+<div class="kicker">Ресторан · Самара</div>
+<h1>Вкусная рулетка</h1>
+<p>Дети лейтенанта Шмидта</p>
+<div class="wheel-wrap"><div class="pointer"></div><div id="wheel" class="wheel"><div class="hub"></div></div></div>
+<button id="spin">Крутить рулетку</button>
+<div id="status" role="status" aria-live="polite">Демонстрационная версия. Призы пока не выдаются.</div>
+<p class="note">Результат определяет сервер. Повторное нажатие не даёт новую попытку.</p>
+</main>
+<script>
+const labels=["Напиток","Десерт","Хачапури","Скидка 10%","Чай","Сюрприз"];
+const wheel=document.getElementById("wheel");
+const button=document.getElementById("spin");
+const status=document.getElementById("status");
+const tg=window.Telegram?.WebApp;
+if(tg)tg.ready();
+labels.forEach((label,i)=>{
+  const el=document.createElement("div");el.className="segment";
+  const angle=i*60+30;
+  el.style.transform="rotate("+angle+"deg) translate(52px,-50%) rotate(90deg)";
+  el.textContent=label;wheel.appendChild(el);
+});
+button.addEventListener("click",async()=>{
+  if(!tg?.initData){status.textContent="Откройте игру через Telegram-бота.";return}
+  button.disabled=true;status.textContent="Определяем результат…";
+  try{
+    const response=await fetch("/api/spin",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({init_data:tg.initData})});
+    const data=await response.json();
+    if(!response.ok)throw Error(data.detail||"Ошибка сервера");
+    const turns=data.status==="spun"?6:2;
+    const angle=360*turns+(360-(data.index*60+30));
+    wheel.style.transform="rotate("+angle+"deg)";
+    status.textContent=data.status==="already_spun"?"Результат уже сохранён. Показываем его снова…":"Колесо вращается…";
+    setTimeout(()=>{
+      status.textContent="Демо-результат: "+data.prize+". Это не действующий приз или промокод.";
+    },5600);
+  }catch(error){status.textContent=error.message;button.disabled=false}
+});
+</script></body></html>
