@@ -25,8 +25,7 @@ class Guest:
         def link(label, url, callback):
             return Button(label, url=url) if url else Button(label, callback_data=callback)
         return Keyboard([[link("✦ Акции", self.config.actions_url, "guest:actions"), link("🍽 Меню", self.config.menu_url, "guest:menu")],
-                         [link("🚘 Доставка", self.config.delivery_url, "guest:delivery"), Button("⌖ Контакты", callback_data="guest:contacts")],
-                         ])
+                         [link("🚘 Доставка", self.config.delivery_url, "guest:delivery"), Button("⌖ Контакты", callback_data="guest:contacts")]])
 
     def back(self):
         return Keyboard([[Button("← Главное меню", callback_data="guest:home")]])
