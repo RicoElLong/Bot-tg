@@ -73,8 +73,7 @@ class Guest:
     async def ask_phone(self, update, context):
         context.user_data["reg_step"] = "phone"
         await self.reply(update, context,
-            "Согласие принято. Введите ваш номер телефона сообщением, например +79991234567. "
-            "Это обязательное поле регистрации. Номер не проверяется автоматически.",
+            "Согласие принято. Введите ваш номер телефона сообщением.",
             ReplyKeyboardRemove())
 
     async def registration_message(self, update, context):
