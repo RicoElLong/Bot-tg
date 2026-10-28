@@ -72,13 +72,11 @@ class Guest:
 
     async def ask_phone(self, update, context):
         context.user_data["reg_step"] = "phone"
-        await context.bot.send_message(
-            chat_id=update.effective_user.id,
-            text="Согласие принято. Нажмите кнопку, чтобы отправить собственный номер телефона.",
-            reply_markup=ReplyKeyboardMarkup(
+        await self.reply(update, context,
+            "Согласие принято. Нажмите кнопку, чтобы отправить собственный номер телефона.",
+            ReplyKeyboardMarkup(
                 [[KeyboardButton("Отправить мой номер", request_contact=True)]],
-                resize_keyboard=True, one_time_keyboard=True),
-        )
+                resize_keyboard=True, one_time_keyboard=True))
 
     async def registration_message(self, update, context):
         uid = update.effective_user.id
@@ -95,11 +93,9 @@ class Guest:
                 return
             context.user_data["reg_phone"] = phone
             context.user_data["reg_step"] = "birthday"
-            await context.bot.send_message(
-                chat_id=uid,
-                text="Укажите дату рождения (ДД.ММ.ГГГГ) или нажмите «Пропустить». Это необязательно.",
-                reply_markup=ReplyKeyboardMarkup([["Пропустить"]], resize_keyboard=True, one_time_keyboard=True),
-            )
+            await self.reply(update, context,
+                "Укажите дату рождения (ДД.ММ.ГГГГ) или нажмите «Пропустить». Это необязательно.",
+                ReplyKeyboardMarkup([["Пропустить"]], resize_keyboard=True, one_time_keyboard=True))
             return
         if step == "birthday":
             value = (msg.text or "").strip()
@@ -122,7 +118,7 @@ class Guest:
                 self.config.pd_text, str(update.update_id), context.user_data["reg_phone"], birthday)
             for key in ("reg_step", "reg_phone", "reg_consent"):
                 context.user_data.pop(key, None)
-            await context.bot.send_message(chat_id=uid, text="Регистрация завершена.", reply_markup=ReplyKeyboardRemove())
+            await self.reply(update, context, "Регистрация завершена.", ReplyKeyboardRemove())
             await self.home(update, context)
 
     async def offer_marketing(self, update, context):
