@@ -30,6 +30,7 @@ class Config:
     menu_url: str
     delivery_url: str
     actions_url: str
+    roulette_webapp_url: str
     contacts: str
     username: str
     welcome_title: str = WELCOME_TITLE
@@ -46,7 +47,7 @@ class Config:
         if any(x <= 0 for x in admins):
             raise ValueError("ADMIN_IDS должны быть положительными")
         urls = []
-        for name in ("MENU_URL", "DELIVERY_URL", "ACTIONS_URL"):
+        for name in ("MENU_URL", "DELIVERY_URL", "ACTIONS_URL", "ROULETTE_WEBAPP_URL"):
             value = e.get(name, "").strip()
             parsed = urlsplit(value)
             if value and (parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password):
@@ -74,7 +75,7 @@ class Config:
             pd_text=e.get("PD_TEXT", "ТЕСТОВЫЙ ТЕКСТ. Для регистрации сохраняются Telegram ID, согласия и история действий. До работы с гостями владелец должен утвердить документ и порядок удаления данных."),
             marketing_version=e.get("MARKETING_VERSION", "draft-marketing-1"),
             marketing_text=e.get("MARKETING_TEXT", "Я добровольно соглашаюсь получать рекламные сообщения ресторана в Telegram. Отказ не мешает пользоваться ботом. Отписаться: /unsubscribe."),
-            menu_url=urls[0], delivery_url=urls[1], actions_url=urls[2],
+            menu_url=urls[0], delivery_url=urls[1], actions_url=urls[2], roulette_webapp_url=urls[3],
             contacts=e.get("CONTACTS_TEXT", "Самара, ул. Лейтенанта Шмидта, 1В"), username=username,
             welcome_title=welcome_title, welcome_text=welcome_text,
             welcome_photo=welcome_photo,
