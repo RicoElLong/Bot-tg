@@ -54,7 +54,13 @@ def build_application(cfg: Config, store: Store, builder=None):
         app.add_handler(CommandHandler(name, guarded(fn)))
     app.add_handler(CallbackQueryHandler(guarded(admin.callback), pattern=r"^admin:"))
     app.add_handler(CallbackQueryHandler(guarded(guest.callback)))
-    app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND & (filters.TEXT | filters.PHOTO), guarded(admin.message)))
+    async def dispatch_message(update, context):
+        if context.user_data.get("reg_step"):
+            await guest.registration_message(update, context)
+        else:
+            await admin.message(update, context)
+
+    app.add_handler(MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND & (filters.TEXT | filters.PHOTO | filters.CONTACT), guarded(dispatch_message)))
 
     async def on_error(_update, context):
         log.error("Ошибка обработчика: %s; содержимое события скрыто", type(context.error).__name__)
