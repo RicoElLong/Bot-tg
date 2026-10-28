@@ -73,21 +73,24 @@ class Guest:
     async def ask_phone(self, update, context):
         context.user_data["reg_step"] = "phone"
         await self.reply(update, context,
-            "Согласие принято. Нажмите кнопку, чтобы отправить собственный номер телефона.",
-            ReplyKeyboardMarkup(
-                [[KeyboardButton("Отправить мой номер", request_contact=True)]],
-                resize_keyboard=True, one_time_keyboard=True))
+            "Согласие принято. Введите ваш номер телефона сообщением, например +79991234567. "
+            "Это обязательное поле регистрации. Номер не проверяется автоматически.",
+            ReplyKeyboardRemove())
 
     async def registration_message(self, update, context):
         uid = update.effective_user.id
         msg = update.effective_message
         step = context.user_data.get("reg_step")
         if step == "phone":
-            contact = msg.contact
-            if not contact or contact.user_id != uid:
-                await self.reply(update, context, "Отправьте собственный контакт кнопкой «Отправить мой номер».")
-                return
-            phone = re.sub(r"[\\s()\\-]", "", contact.phone_number or "")
+            # Accept a number entered as text. An optional Telegram contact must belong to this user.
+            if msg.contact:
+                if msg.contact.user_id != uid:
+                    await self.reply(update, context, "Введите свой номер телефона текстом.")
+                    return
+                raw_phone = msg.contact.phone_number or ""
+            else:
+                raw_phone = (msg.text or "").strip()
+            phone = re.sub(r"[\\s()\\-]", "", raw_phone)
             if not re.fullmatch(r"\\+?\\d{10,15}", phone):
                 await self.reply(update, context, "Номер некорректен. Попробуйте снова.")
                 return
