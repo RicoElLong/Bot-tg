@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS clients(
  first_source TEXT NOT NULL, last_source TEXT NOT NULL,
  blocked INTEGER NOT NULL DEFAULT 0 CHECK(blocked IN (0,1))
 );
+CREATE TABLE IF NOT EXISTS guest_profiles(
+ client_id INTEGER PRIMARY KEY REFERENCES clients(id) ON DELETE CASCADE,
+ phone TEXT NOT NULL, birthday TEXT, completed_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS consents(
  id INTEGER PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
  kind TEXT NOT NULL CHECK(kind IN ('pd','marketing')), granted INTEGER NOT NULL,
@@ -116,6 +120,26 @@ class Store:
     def registered(self, client_id: int) -> bool:
         with self.connect() as conn:
             return self.allowed(conn, client_id, "pd")
+
+    def registration_complete(self, client_id: int) -> bool:
+        with self.connect() as conn:
+            return self.allowed(conn, client_id, "pd") and conn.execute(
+                "SELECT 1 FROM guest_profiles WHERE client_id=?", (client_id,)
+            ).fetchone() is not None
+
+    def complete_registration(self, client_id: int, source: str, version: str, document: str,
+                              event_key: str, phone: str, birthday: str | None):
+        with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("INSERT OR IGNORE INTO clients(id,registered_at,first_source,last_source) VALUES(?,?,?,?)",
+                         (client_id, now(), source, source))
+            conn.execute("UPDATE clients SET blocked=0,last_source=? WHERE id=?", (source, client_id))
+            if not self.allowed(conn, client_id, "pd"):
+                conn.execute("INSERT OR IGNORE INTO consents(client_id,kind,granted,version,document,occurred_at,source,event_key) VALUES(?,'pd',1,?,?,?,?,?)",
+                             (client_id, version, document, now(), source, event_key))
+            conn.execute("INSERT INTO guest_profiles(client_id,phone,birthday,completed_at) VALUES(?,?,?,?) "
+                         "ON CONFLICT(client_id) DO UPDATE SET phone=excluded.phone,birthday=excluded.birthday,completed_at=excluded.completed_at",
+                         (client_id, phone, birthday, now()))
 
     def subscribed(self, client_id: int) -> bool:
         with self.connect() as conn:
