@@ -90,8 +90,8 @@ class Guest:
                 raw_phone = msg.contact.phone_number or ""
             else:
                 raw_phone = (msg.text or "").strip()
-            phone = re.sub(r"[\\s()\\-]", "", raw_phone)
-            if not re.fullmatch(r"\\+?\\d{10,15}", phone):
+            phone = re.sub(r"[\s()-]", "", raw_phone)
+            if not re.fullmatch(r"\+?\d{10,15}", phone):
                 await self.reply(update, context, "Номер некорректен. Попробуйте снова.")
                 return
             context.user_data["reg_phone"] = phone
